@@ -5,6 +5,8 @@ services:
       POSTGRES_USER: chat
       POSTGRES_PASSWORD: chat
       POSTGRES_DB: chat
+    ports:
+      - "5432:5432"
     volumes:
       - ./db/init.sql:/docker-entrypoint-init.d/init.sql
       - pgdata:/var/lib/postgresql/data
@@ -16,10 +18,10 @@ services:
 
   server:
     build: ./server
-    ports: 
-      - "5432:5432"
+    ports:
+      - "8080:8080"
     environment:
-      DATABASE_URL: "host=postgres user=caht password=chat dbname=chat"
+      DATABASE_URL: "host=postgres user=chat password=chat dbname=chat"
     depends_on:
       postgres:
         condition: service_healthy
