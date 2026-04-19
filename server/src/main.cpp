@@ -22,7 +22,7 @@ void save_message(const std::string& user, const std::string& text) {
         pqxx::work txn(conn);
 
         txn.exec_params(
-            "INSERT INTO messages (user, text) VALUES ($1, $2)",
+            "INSERT INTO messages (\"user\", text) VALUES ($1, $2)",
             user, text
         );
 
@@ -37,7 +37,7 @@ std::string get_messages() {
         pqxx::connection conn(conn_str);
         pqxx::work txn(conn);
 
-        pqxx::result r = txn.exec("SELECT user, text, createdAt FROM messages ORDER BY id DESC LIMIT 50");
+        pqxx::result r = txn.exec("SELECT \"user\", text, createdAt FROM messages ORDER BY id DESC LIMIT 50");
 
         std::stringstream json;
         json << "[";

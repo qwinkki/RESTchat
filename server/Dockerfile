@@ -19,6 +19,7 @@ FROM ubuntu:24.04
 RUN apt-get update && apt-get install -y \
     libpqxx-dev \
     libcurl4-openssl-dev \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
