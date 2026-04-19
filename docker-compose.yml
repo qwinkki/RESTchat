@@ -14,7 +14,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U chat"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 2
 
   server:
     build: ./server
