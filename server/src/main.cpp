@@ -18,15 +18,15 @@ std::string conn_str = env ? env : "";
 // db
 void save_message(const std::string& user, const std::string& text) {
     try {
-        pqxx::connection conn(conn_str);
-        pqxx::work txn(conn);
+        pqxx::connection conn(conn_str); // connect postgresql
+        pqxx::work txn(conn); // working
 
         txn.exec_params(
-            "INSERT INTO messages (\"user\", text) VALUES ($1, $2)",
-            user, text
+            "INSERT INTO messages (\"user\", text) VALUES ($1, $2)", // request
+            user, text // params $1 $2
         );
 
-        txn.commit();
+        txn.commit(); // send request to db
     } catch (const std::exception &e) {
         std::cerr << "DB error: " << e.what() << std::endl;
     }
@@ -37,12 +37,12 @@ std::string get_messages() {
         pqxx::connection conn(conn_str);
         pqxx::work txn(conn);
 
-        pqxx::result r = txn.exec("SELECT \"user\", text, createdAt FROM messages ORDER BY id DESC LIMIT 50");
+        pqxx::result r = txn.exec("SELECT \"user\", text, createdAt FROM messages ORDER BY id DESC LIMIT 50"); // get data from db
 
         std::stringstream json;
         json << "[";
 
-        for (size_t i = 0; i < r.size(); ++i) {
+        for (size_t i = 0; i < r.size(); ++i) { // data set as json
             json << "{"
                  << "\"user\":\"" << r[i]["user"].c_str() << "\","
                  << "\"text\":\"" << r[i]["text"].c_str() << "\","
@@ -66,7 +66,7 @@ bool parse_json(const std::string& body, std::string& user, std::string& text) {
     size_t u1 = body.find("\"user\"");
     size_t t1 = body.find("\"text\"");
 
-    if (u1 == std::string::npos || t1 == std::string::npos)
+    if (u1 == std::string::npos || t1 == std::string::npos) // if smth dont exists
         return false;
 
     size_t u_start = body.find("\"", u1 + 6) + 1;
@@ -83,7 +83,7 @@ bool parse_json(const std::string& body, std::string& user, std::string& text) {
 
 std::string http_response(const std::string& body, const std::string& status = "200 OK") {
     std::stringstream response;
-    response << "HTTP/1.1 " << status << "\r\n";
+    response << "HTTP/1.1 " << status << "\r\n"; // http request to client
     response << "Content-Type: application/json\r\n";
     response << "Content-Length: " << body.size() << "\r\n";
     response << "Connection: close\r\n\r\n";
@@ -94,7 +94,7 @@ std::string http_response(const std::string& body, const std::string& status = "
 // seerver
 void handle_client(int client_socket) {
     char buffer[BUFFER_SIZE];
-    memset(buffer, 0, BUFFER_SIZE);
+    memset(buffer, 0, BUFFER_SIZE); // memory size
 
     int bytes_read = read(client_socket, buffer, BUFFER_SIZE);
 
@@ -112,15 +112,15 @@ void handle_client(int client_socket) {
 
     std::string request(buffer, bytes_read);
 
-    if (request.find("POST /message") != std::string::npos) {
+    if (request.find("POST /message") != std::string::npos) { // create new message on server
 
-        size_t body_pos = request.find("\r\n\r\n");
+        size_t body_pos = request.find("\r\n\r\n"); // json spaces
         std::string body = request.substr(body_pos + 4);
 
         std::string user, text;
 
         if (parse_json(body, user, text)) {
-            save_message(user, text);
+            save_message(user, text); // save message to db
             std::string res = http_response("{\"status\":\"ok\"}");
             send(client_socket, res.c_str(), res.size(), 0);
         } else {
@@ -128,11 +128,11 @@ void handle_client(int client_socket) {
             send(client_socket, res.c_str(), res.size(), 0);
         }
 
-    } else if (request.find("GET /messages") != std::string::npos) {
+    } else if (request.find("GET /messages") != std::string::npos) { // get messages from server
 
-        std::string messages = get_messages();
-        std::string res = http_response(messages);
-        send(client_socket, res.c_str(), res.size(), 0);
+        std::string messages = get_messages(); // get messages from db
+        std::string res = http_response(messages); // send messages to client
+        send(client_socket, res.c_str(), res.size(), 0); // send response to client
 
     } else {
         std::string res = http_response("{\"error\":\"not found\"}", "404 Not Found");
@@ -149,20 +149,20 @@ int main() {
     struct sockaddr_in address;
     int addrlen = sizeof(address);
 
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    server_fd = socket(AF_INET, SOCK_STREAM, 0); // create socket AF_INET - ipv4, SOCK_STREAM - tcp
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+    address.sin_family = AF_INET; // ipv4
+    address.sin_addr.s_addr = INADDR_ANY; // any address
+    address.sin_port = htons(PORT); // port
 
-    bind(server_fd, (struct sockaddr*)&address, sizeof(address));
-    listen(server_fd, 10);
+    bind(server_fd, (struct sockaddr*)&address, sizeof(address)); // bind socket to address and port
+    listen(server_fd, 10); // listen for connections, 10 - max queue of pending connections
 
     std::cout << "HTTP Messenger running on port " << PORT << std::endl;
 
     while (true) {
-        int client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
-        std::thread(handle_client, client_socket).detach();
+        int client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen); // accept new connection
+        std::thread(handle_client, client_socket).detach(); // handle client in new thread (detach - to not wait for thread to finish)
     }
 
     return 0;
