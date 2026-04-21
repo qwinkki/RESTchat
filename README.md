@@ -15,3 +15,5 @@ start project:
 #### Additionally:
 Services run on ubuntu:24.04  
 Using curl and pqxx libraries for api and DB  
+
+> Every specified command is commeted in code (in /src/main.cpp files)
